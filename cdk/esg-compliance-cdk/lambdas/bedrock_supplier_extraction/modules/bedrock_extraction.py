@@ -206,7 +206,7 @@ Here is the table you must reference when responding to the information request:
     # write function to catch a parse error and store the table somewhere
     return parse_response(text)
 
-def haiku_extract_from_page(page: str, queries: List[str], bedrock_runtime) -> Dict[str,str]:
+def sonnet_extract_from_page(page: str, queries: List[str], bedrock_runtime) -> Dict[str,str]:
     prompt = """You are a validation step in a data-science process, your responses should be consistent and reliable.
 Your task is to analyze the markdown page provided to you and extract any information the user asks for as a key value pair.
 You should look through the page and consider its structure.  The page may contain tables forms and seemingly unstructured data. You should make sense of all of this.
@@ -243,7 +243,7 @@ Here is the page information you must reference when responding to the informati
     
     response = bedrock_runtime.invoke_model(
         body=body,
-        modelId="anthropic.claude-3-haiku-20240307-v1:0",
+        modelId="us.anthropic.claude-3-7-sonnet-20250219-v1:0",
         accept="application/json",
         contentType="application/json",
     )
@@ -285,7 +285,7 @@ def supplier_extract(supplier_uri: str) -> Dict:
     }
     logger.info("Extracting info from pages")
     page_query_dict = {
-        name: haiku_extract_from_page(page_data[name], bedrock_tables[name]["queries"], bedrock_runtime)
+        name: sonnet_extract_from_page(page_data[name], bedrock_tables[name]["queries"], bedrock_runtime)
         for name in page_data
     }
     

@@ -12,9 +12,10 @@ logger.setLevel(logging.INFO)
 ddb = boto3.resource('dynamodb')
 bedrock_runtime = boto3.client('bedrock-runtime')
 
-prompt = """You are a Social Sutstainability Assistant working for AnyCompany Fashion.
-Your task is to construct an email which will be sent to a supplier following evaluation of their audit.
-The email should have a professional tone and must match the format which you will shown to you wrapped in <format></format> tags:
+prompt= """You are a Social Sustainability Assistant working for AnyCompany Fashion.
+Your task is to construct an email which will be sent to a supplier following evaluation of their audit
+The email should have a professional tone and must match the format shown below in <format></format> tags:
+
 The user will pass in all the information required to populate the email body.
 Please Note.  The report Type will always be SMETA.
 
@@ -47,6 +48,7 @@ Thank you in advance for your cooperation.
 
 Here is an example email written by one of our existing Social Sustainability Assistants.
 This is the base quality of email we expect you to produce.
+
 """
 
 multi_issue_example = """Good afternoon Shaji,
@@ -103,6 +105,7 @@ If you have any questions, please do not hesitate to ask.
 
 Thank you in advance for your cooperation."""
 
+format = "Ensure the email is always wrapped in <format></format> tags."
 
 
 def get_audit_issues(table_name: str, company_name: str, audit_date: str) -> dict:
@@ -150,55 +153,70 @@ def generate_email(supplier_info: dict, markdown_issues_table):
     if markdown_issues_table is None:
         markdown_issues_table = "There are no issues"
 
-    body = json.dumps({
-        "anthropic_version": "bedrock-2023-05-31",
-        "system": system,
-        "messages": [
+    system_list = [
+        {
+            "text": system
+        },
+        {
+            "text": format
+        }
+    ]
+
+    message_list = [
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Can you generate an email body for me."}
+                    {"text": "Can you generate an email body for me."}
                 ]
             },
             {
                 "role": "assistant",
                 "content": [
-                    {"type": "text", "text": "Please provide the supplier details"}
+                    {"text": "Please provide the supplier details"}
                 ]
             },
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": json.dumps(supplier_info)}
+                    {"text": json.dumps(supplier_info)}
                 ]
             },
                    {
                 "role": "assistant",
                 "content": [
-                    {"type": "text", "text": "Please provide the issue details and I will respond with the email body."}
+                    {"text": "Please provide the issue details and I will respond with the email body."}
                 ]
             },
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": markdown_issues_table}
+                    {"text": markdown_issues_table}
                 ]
             }
-        ],
-        "temperature": 0.7,
-        "max_tokens": 2000,
-        "top_k": 100,
-        "top_p": 0.4
-    })
+        ]
+    inf_params = {"maxTokens": 2000, "topP": 0.4, "topK": 100, "temperature": 0.7}
+    body = {
+        "schemaVersion": "messages-v1",
+        "messages": message_list,
+        "system": system_list,
+        "inferenceConfig": inf_params,
+    }
 
     response = bedrock_runtime.invoke_model(
-        body=body,
-        modelId="anthropic.claude-3-sonnet-20240229-v1:0",
-        accept="application/json",
-        contentType="application/json",
+        body=json.dumps(body),
+        modelId="us.amazon.nova-pro-v1:0"
     )
+    print(response)
 
-    return json.loads(response["body"].read())['content'][0]['text']
+    streaming_body = response['body']
+    response_content = streaming_body.read()
+    response_text = response_content.decode('utf-8')
+
+    response_json = json.loads(response_text)
+    print(response_json)
+
+    return  response_json['output']['message']['content'][0]['text']
+
 
 def parse_email_response(response: str) -> str:
     try:

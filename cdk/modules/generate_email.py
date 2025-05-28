@@ -188,7 +188,7 @@ def generate_email(supplier_info: dict, markdown_issues_table):
 
     response = bedrock_runtime.invoke_model(
         body=body,
-        modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+        modelId="us.amazon.nova-pro-v1:0",
         accept="application/json",
         contentType="application/json",
     )

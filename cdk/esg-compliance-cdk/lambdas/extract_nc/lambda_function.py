@@ -213,7 +213,7 @@ def get_explanation(table_data,issues_timescale_list):
 
     response = bedrock_runtime.invoke_model(
         body=body,
-        modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+        modelId="us.anthropic.claude-3-7-sonnet-20250219-v1:0",
         accept="application/json",
         contentType="application/json",
     )
@@ -239,7 +239,11 @@ def add_issue_to_dynamodb(issues_list,company_name,audit_date, clause,section):
             continue 
 
         nc_observation = item[0]
-        issue_title = item[1].split('-')[-1]
+        issue_title = item[1]
+        if '-' in issue_title:
+            parts = issue_title.split('-', 1)
+            if parts[0].strip().isdigit():
+                issue_title = parts[1]
         timescale = item [2]
         explanation = item [3]
         audit_date_issue_no = audit_date+f'-{section}'+'#'+str(count)
